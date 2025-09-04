@@ -191,39 +191,42 @@ void Scene::RenderImgui() {
             }
 
             // Transform UI
+            // Transform UI
             ImGui::Text("Transform");
 
-            ImGui::Text("Position");
+            // --- Position ---
             glm::vec3 localPos = transform.GetLocalPosition();
-            ImGui::Text("Local: ");
-            ImGui::SameLine();
-            if (ImGui::DragFloat3("#1", glm::value_ptr(localPos))) {
+            if (ImGui::DragFloat3("Local Position", glm::value_ptr(localPos), 0.1f)) {
                 transform.SetLocalPosition(localPos);
             }
 
             glm::vec3 worldPos = transform.GetWorldPosition();
-            ImGui::Text("World: ");
-            ImGui::SameLine();
-            if (ImGui::DragFloat3("##2", glm::value_ptr(worldPos))) {
+            if (ImGui::DragFloat3("World Position", glm::value_ptr(worldPos), 0.1f)) {
                 transform.SetWorldPosition(worldPos);
             }
 
-            constexpr float scaleSpeed{0.05f};
+            // --- Rotation ---
+            glm::vec3 localRot = transform.GetLocalRotationEuler(); // <- You'll need a function that returns euler angles
+            if (ImGui::DragFloat3("Local Rotation", glm::value_ptr(localRot), 1.0f, -180.0f, 180.0f)) {
+                transform.SetLocalRotationEuler(localRot);
+            }
 
-            ImGui::Text("Scale");
+            glm::vec3 worldRot = transform.GetWorldRotationEuler();
+            if (ImGui::DragFloat3("World Rotation", glm::value_ptr(worldRot), 1.0f, -180.0f, 180.0f)) {
+                transform.SetWorldRotationEuler(worldRot);
+            }
+
+            // --- Scale ---
             glm::vec3 localScale = transform.GetLocalScale();
-            ImGui::Text("Local: ");
-            ImGui::SameLine();
-            if (ImGui::DragFloat3("###3", glm::value_ptr(localScale), scaleSpeed)) {
+            if (ImGui::DragFloat3("Local Scale", glm::value_ptr(localScale), 0.05f)) {
                 transform.SetLocalScale(localScale);
             }
 
             glm::vec3 worldScale = transform.GetWorldScale();
-            ImGui::Text("World: ");
-            ImGui::SameLine();
-            if (ImGui::DragFloat3("####4", glm::value_ptr(worldScale), scaleSpeed)) {
+            if (ImGui::DragFloat3("World Scale", glm::value_ptr(worldScale), 0.05f)) {
                 transform.SetWorldScale(worldScale);
             }
+
 
             // ImGui::SeparatorText("Object's Components");
 

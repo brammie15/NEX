@@ -37,12 +37,17 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   of a homebrew executable (.nro). This is intended to be used for sysmodules.
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
-TARGET		:=	$(notdir $(CURDIR))
+# TARGET		:=	$(notdir $(CURDIR))
+TARGET		:=	nex_engine_demo
 BUILD		:=	build
 SOURCES		:=	source source/imgui source/Engine source/Engine/ObjectModel source/Engine/Managers source/Engine/Scene source/Engine/Resources/ source/Engine/Components
 DATA		:=	data
 INCLUDES	:=	include include/imgui include/Engine include/Engine/ObjectModel include/Engine/Managers include/Engine/Scene include/Engine/Resources include/Engine/Components
 ROMFS	:=	romfs
+
+APP_TITLE	:=	NEX Engine Demo
+APP_AUTHOR	:=	Bram Verhulst
+APP_VERSION	:=	1.0.1
 
 #---------------------------------------------------------------------------------
 # options for code generation

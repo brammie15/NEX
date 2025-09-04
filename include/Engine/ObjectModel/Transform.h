@@ -47,6 +47,27 @@ public:
     [[nodiscard]] const glm::quat& GetLocalRotation() const { return m_LocalRotation; }
     [[nodiscard]] const glm::vec3& GetLocalScale() const { return m_LocalScale; }
 
+    [[nodiscard]] glm::vec3 GetLocalRotationEuler() const {
+        return glm::degrees(glm::eulerAngles(m_LocalRotation));
+    }
+
+    [[nodiscard]] glm::vec3 GetWorldRotationEuler() const {
+        return glm::degrees(glm::eulerAngles(m_WorldRotation));
+    }
+
+    void SetLocalRotationEuler(const glm::vec3& eulerAngles) {
+        m_LocalRotation = glm::quat(glm::radians(eulerAngles));
+        SetRotationDirty();
+    }
+
+    void SetWorldRotationEuler(const glm::vec3& eulerAngles) {
+        SetWorldRotation(glm::quat(glm::radians(eulerAngles)));
+    }
+
+    void SetLocalRotationEuler(float x, float y, float z) {
+        SetLocalRotationEuler(glm::vec3{x, y, z});
+    }
+
 
     void SetLocalPosition(const glm::vec3& position);
     void SetLocalPosition(float x, float y, float z);

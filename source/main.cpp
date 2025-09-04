@@ -39,6 +39,7 @@
 #include "Engine/Components/CameraComponent.h"
 #include "Engine/Components/MeshRendererComponent.h"
 #include "Engine/Components/CameraMoverComponent.h"
+#include "Engine/Components/RotatorComponent.h"
 
 // Constants used for scaling as well as
 // creating a window of the right size on PC
@@ -171,7 +172,24 @@ int main(int, char**)
     modelObj->AddComponent<MeshRendererComponent>("/switch/models/fire_hydrant/FireHydrantMesh.obj");
 
     currentScene.SetMainCamera(cameraComp);
-    
+
+    auto talyaModelObj = std::make_shared<GameObject>("Talya");
+    currentScene.Add(talyaModelObj);
+    talyaModelObj->AddComponent<MeshRendererComponent>("/switch/models/talya/talya.obj");
+    talyaModelObj->GetTransform().SetLocalPosition(glm::vec3(2.0f, 0.0f, 0.0f));
+
+    auto cubeObj = std::make_shared<GameObject>("CubeModel");
+    currentScene.Add(cubeObj);
+    cubeObj->AddComponent<MeshRendererComponent>("/switch/models/Primitives/cube.obj");
+    cubeObj->GetTransform().SetLocalPosition(glm::vec3(0.0f, 0.0f, -5.0f));
+
+    auto sphereObj = std::make_shared<GameObject>("SphereModel");
+    currentScene.Add(sphereObj);
+    sphereObj->AddComponent<RotatorComponent>(10, 0.01f);
+    sphereObj->AddComponent<MeshRendererComponent>("/switch/models/Primitives/sphere.obj");
+    sphereObj->GetTransform().SetLocalPosition(glm::vec3(-2.0f, 0.0f, 0.0f));
+
+
     // glFrontFace(GL_CW);
 
     // Cull mode
