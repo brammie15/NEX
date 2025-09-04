@@ -34,6 +34,11 @@ public:
         //        this->GetTransform().GetWorldPosition().x,
         //        this->GetTransform().GetWorldPosition().y,
         //        this->GetTransform().GetWorldPosition().z);
+        auto position = this->GetTransform().GetWorldPosition();
+        auto rotation = this->GetTransform().GetWorldRotation();
+        //
+        printf("Camera position: %f, %f, %f\n", position.x, position.y, position.z);
+        printf("Camera Rotation: %f, %f, %f\n", rotation.x, rotation.y, rotation.z);
     }
 };
 

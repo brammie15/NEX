@@ -129,6 +129,8 @@ int main(int, char**)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "test", nullptr, nullptr);
     if (!window)
     {
@@ -162,7 +164,7 @@ int main(int, char**)
     auto cameraComp = cameraObj->AddComponent<CameraComponent>();
     auto cameraMover = cameraObj->AddComponent<CameraMover>();
     currentScene.Add(cameraObj);   
-    cameraObj->GetTransform().SetLocalPosition(glm::vec3(0.0f, 0.0f, -5.0f));
+    cameraObj->GetTransform().SetLocalPosition(glm::vec3(-5.0f, 1.0f, 0.0f));
 
     auto modelObj = std::make_shared<GameObject>("Model");
     currentScene.Add(modelObj);
@@ -170,7 +172,15 @@ int main(int, char**)
 
     currentScene.SetMainCamera(cameraComp);
     
-    glFrontFace(GL_CCW);
+    // glFrontFace(GL_CW);
+
+    // Cull mode
+    // glEnable(GL_CULL_FACE);
+    // glDisable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    // glCullFace(GL_BACK);
+
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -213,7 +223,7 @@ int main(int, char**)
 
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         SceneManager::GetInstance().Render();
 

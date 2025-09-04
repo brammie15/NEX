@@ -66,16 +66,6 @@ public:
     void SetWorldScale(double x, double y, double z);
     void SetWorldScale(const glm::vec3& scale);
 
-    // Sets the forward direction, keeps the up vector as world up by default
-    void SetForward(const glm::vec3& forward, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f)) {
-        glm::vec3 f = glm::normalize(forward);
-        glm::vec3 r = glm::normalize(glm::cross(up, f)); // right vector
-        glm::vec3 u = glm::cross(f, r);                  // recalculated up
-
-        glm::mat3 rotMat(r, u, -f); // columns: right, up, -forward (OpenGL style)
-        SetLocalRotation(glm::quat_cast(rotMat));
-    }
-
     // Sets the up vector, keeps the forward vector the same
     void SetUp(const glm::vec3& up) {
         glm::vec3 f = GetForward();
@@ -85,6 +75,29 @@ public:
 
         glm::mat3 rotMat(r, u, -f); // right, up, -forward
         SetLocalRotation(glm::quat_cast(rotMat));
+    }
+
+
+    glm::vec3 GetForward() {
+        return GetWorldRotation() * glm::vec3(0, 0, 1); // or -1 depending on your coordinate system
+    }
+
+    glm::vec3 GetRight() {
+        return GetWorldRotation() * glm::vec3(1, 0, 0);
+    }
+
+    glm::vec3 GetUp() {
+        return GetWorldRotation() * glm::vec3(0, 1, 0);
+    }
+
+    void SetForward(const glm::vec3& forward) {
+        glm::vec3 normalizedForward = glm::normalize(forward);
+        glm::vec3 right = glm::normalize(glm::cross(normalizedForward, glm::vec3(0, 1, 0)));
+        glm::vec3 up = glm::cross(right, normalizedForward);
+        
+        glm::mat3 rotMatrix = glm::mat3(right, up, -normalizedForward); // Note: might need to adjust signs
+        glm::quat rotation = glm::quat_cast(rotMatrix);
+        SetWorldRotation(rotation);
     }
 
 

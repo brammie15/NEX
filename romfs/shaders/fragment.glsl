@@ -64,6 +64,10 @@ float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 void main()
 {
+
+    vec3 my_LightDir = vec3(-0.2, -1.0, -0.3); // hardcoded light direction
+    vec3 my_LightColor = vec3(255.0 / 255.0, 105.0 / 255.0, 180.0 / 255.0);  // hardcoded light color
+
     vec3 albedo = pow(texture(texBaseColor, vTexCoord).rgb, vec3(2.2)); // sRGB -> linear
     float metallic = texture(texMetallic, vTexCoord).r;
     float roughness = texture(texRoughness, vTexCoord).r;
@@ -73,7 +77,7 @@ void main()
 
     vec3 N = getNormal();
     vec3 V = normalize(uCamPos - vWorldPos);
-    vec3 L = normalize(-uLightDir);  // directional light points *to* the surface
+    vec3 L = normalize(-my_LightDir);  // directional light points *to* the surface
     vec3 H = normalize(V + L);
 
     // PBR calculations
@@ -93,7 +97,7 @@ void main()
     vec3 kD = (1.0 - kS) * (1.0 - metallic);
     vec3 diffuse = kD * albedo / PI;
 
-    vec3 radiance = uLightColor;
+    vec3 radiance = my_LightColor;
     vec3 color = (diffuse + specular) * radiance * NdotL;
     // color *= ao; // apply AO
     color = pow(color, vec3(1.0/2.2)); // gamma correction
@@ -105,5 +109,5 @@ void main()
     // TestColor
     // fragColor = vec4(vNormal * 0.5 + 0.5, 1.0);
 
-    fragColor = vec4(albedo, 1.0);
+    // fragColor = vec4(albedo, 1.0);
 }

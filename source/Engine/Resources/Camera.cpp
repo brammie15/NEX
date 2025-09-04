@@ -76,6 +76,6 @@ void Camera::update(const PadState* pad, float dt)
     }
 
     // Debug: print camera position
-    // printf("Camera position: %f, %f, %f\n", position_.x, position_.y, position_.z);
-    // printf("Camera Rotation: %f, %f\n", yaw_, pitch_);
+    printf("Camera position: %f, %f, %f\n", position_.x, position_.y, position_.z);
+    printf("Camera Rotation: %f, %f\n", yaw_, pitch_);
 }
