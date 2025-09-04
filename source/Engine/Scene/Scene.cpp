@@ -1,0 +1,310 @@
+#include "Scene.h"
+
+#include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
+
+#include "../ObjectModel/GameObject.h"
+
+#include <algorithm>
+#include <functional>
+
+
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+// #include "ServiceLocator.h"
+#include "InputManager.h"
+// #include "Managers/Renderer.h"
+
+#include "Engine/Components/CameraComponent.h"
+#include "Engine/Components/MeshRendererComponent.h"
+
+
+
+
+unsigned int Scene::m_idCounter = 0;
+
+Scene::Scene(const std::string& name) : m_name(name) {
+}
+
+Scene::~Scene() = default;
+
+void Scene::Add(std::shared_ptr<GameObject> object) {
+    // m_objects.emplace_back(std::move(object));
+    m_pendingAdditions.emplace_back(std::move(object));
+}
+
+void Scene::Remove(const std::shared_ptr<GameObject>& object) {
+    std::erase(m_objects, object);
+}
+
+void Scene::RemoveAll() {
+    m_objects.clear();
+}
+
+void Scene::Load() {
+    // OnSceneLoaded.Invoke();
+    if (m_registerBindings) {
+        m_registerBindings();
+    }
+}
+
+void Scene::Update() {
+    // if (InputManager::GetInstance().IsKeyPressed(SDL_SCANCODE_F3)) {
+    //     m_renderImgui = !m_renderImgui;
+    // }
+
+    if(InputManager::GetInstance().IsButtonPressed(HidNpadButton_Minus)) {
+        m_renderImgui = !m_renderImgui;
+    }
+
+    // if (InputManager::GetInstance().IsKeyPressed(SDL_SCANCODE_F1)) {
+    //     const int currentSceneId = SceneManager::GetInstance().GetActiveSceneId();
+    //     SceneManager::GetInstance().SwitchScene((currentSceneId + 1) % SceneManager::GetInstance().GetSceneCount());
+    // }
+
+    // if (InputManager::GetInstance().IsKeyPressed(SDL_SCANCODE_F2)) {
+    //     ServiceLocator<fovy::ISoundSystem>::GetService().ToggleMute();
+    // }
+
+    if (!m_pendingAdditions.empty()) {
+        for (auto& obj : m_pendingAdditions) {
+            m_objects.emplace_back(std::move(obj));
+        }
+        m_pendingAdditions.clear();
+    }
+
+
+    for (const auto& object: m_objects) {
+        if (object->IsActiveInHierarchy()) {
+            object->Update();
+        }
+    }
+}
+
+void Scene::FixedUpdate() {
+    for (const auto& object: m_objects) {
+        if (object->IsActiveInHierarchy()) {
+            object->FixedUpdate();
+        }
+    }
+}
+
+void Scene::LateUpdate() {
+    for (const auto& object: m_objects) {
+        if (object->IsActiveInHierarchy()) {
+            object->LateUpdate();
+        }
+    }
+}
+
+void Scene::Render() const {
+    for (const auto& object: m_objects) {
+        if (object->IsActiveInHierarchy()) {
+            object->Render();
+        }
+    }
+
+    // int width, height;
+    // SDL_GetWindowSize(Renderer::GetInstance().GetSDLWindow(), &width, &height);
+    //
+    // Renderer::GetInstance().RenderLine(
+    //     static_cast<float>(width / 2), 0,
+    //     static_cast<float>(width / 2), static_cast<float>(height), SDL_Color(255, 0, 0, 255) // Red vertical line
+    // );
+    //
+    // Renderer::GetInstance().RenderLine(
+    //     0, static_cast<float>(height / 2), static_cast<float>(width), static_cast<float>(height / 2), SDL_Color(0, 255, 0, 255) // Green horizontal line
+    // );
+
+    std::vector<MeshRendererComponent*> renderers;
+
+    for (const auto& object: m_objects) {
+        if (!object->IsActiveInHierarchy()) continue;
+
+        for (const auto& comp: object->GetComponents()) {
+            if (auto meshR = dynamic_cast<MeshRendererComponent*>(comp.get())) {
+                renderers.push_back(meshR);
+            }
+        }
+    }
+
+    // // Optional: sort by material to reduce GPU state changes
+    // std::sort(renderers.begin(), renderers.end(), [](const MeshRenderer* a, const MeshRenderer* b) {
+    //     return a->GetMaterial()->GetId() < b->GetMaterial()->GetId();
+    // });
+
+    for (const auto* mr: renderers) {
+        mr->GetShader()->use();
+
+        mr->GetShader()->setMat4("uModel", mr->GetTransform().GetWorldMatrix());
+        if (m_mainCamera) {
+            mr->GetShader()->setMat4("uView", m_mainCamera->GetViewMatrix());
+            mr->GetShader()->setMat4("uProj", m_mainCamera->GetProjectionMatrix());
+            mr->GetShader()->setVec3("uCamPos", m_mainCamera->GetTransform().GetWorldPosition());
+        }
+
+        mr->GetModel()->draw(
+            mr->GetShader()->getUniformLocation("texBaseColor"),
+            mr->GetShader()->getUniformLocation("texMetallic"),
+            mr->GetShader()->getUniformLocation("texRoughness"),
+            mr->GetShader()->getUniformLocation("texAO"),
+            mr->GetShader()->getUniformLocation("texNormal")
+        );
+    }
+
+}
+
+void Scene::RenderImgui() {
+    if (!m_renderImgui) {return;}
+    for (const auto& object: m_objects) {
+        object->ImGuiRender();
+    }
+
+    if (m_ShowDemoWindow) {
+        ImGui::ShowDemoWindow();
+    }
+
+    ImGui::Begin(std::string("Scene: " + m_name).c_str());
+    ImGui::SetWindowSize(ImVec2{500, 600});
+
+    int id = 0;
+
+    // Recursive function to render an object and its children
+    std::function<void(GameObject*)> RenderObject = [&] (GameObject* object) {
+        ImGui::PushID(id++);
+        const bool treeOpen = ImGui::TreeNodeEx(object->GetName().c_str());
+
+        // Destroy button on the same line
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Destroy")) {
+            object->Destroy();
+        }
+
+
+        if (treeOpen) {
+            auto& transform = object->GetTransform();
+
+            bool isActive = object->IsActiveInHierarchy();
+            if (ImGui::Checkbox("Active", &isActive)) {
+                object->SetActive(isActive);
+            }
+
+            // Transform UI
+            ImGui::Text("Transform");
+
+            ImGui::Text("Position");
+            glm::vec3 localPos = transform.GetLocalPosition();
+            ImGui::Text("Local: ");
+            ImGui::SameLine();
+            if (ImGui::DragFloat3("#1", glm::value_ptr(localPos))) {
+                transform.SetLocalPosition(localPos);
+            }
+
+            glm::vec3 worldPos = transform.GetWorldPosition();
+            ImGui::Text("World: ");
+            ImGui::SameLine();
+            if (ImGui::DragFloat3("##2", glm::value_ptr(worldPos))) {
+                transform.SetWorldPosition(worldPos);
+            }
+
+            constexpr float scaleSpeed{0.05f};
+
+            ImGui::Text("Scale");
+            glm::vec3 localScale = transform.GetLocalScale();
+            ImGui::Text("Local: ");
+            ImGui::SameLine();
+            if (ImGui::DragFloat3("###3", glm::value_ptr(localScale), scaleSpeed)) {
+                transform.SetLocalScale(localScale);
+            }
+
+            glm::vec3 worldScale = transform.GetWorldScale();
+            ImGui::Text("World: ");
+            ImGui::SameLine();
+            if (ImGui::DragFloat3("####4", glm::value_ptr(worldScale), scaleSpeed)) {
+                transform.SetWorldScale(worldScale);
+            }
+
+            // ImGui::SeparatorText("Object's Components");
+
+            // Render components
+            for (const auto& component: object->GetComponents()) {
+                ImGui::PushID(id++);
+                component->ImGuiInspector();
+                ImGui::PopID();
+            }
+            // ImGui::SeparatorText("Children");
+            // Render children recursively
+            for (const auto child: transform.GetChildren()) {
+                RenderObject(child->GetOwner());
+            }
+
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    };
+
+    ImGui::Checkbox("Show Demo Window", &m_ShowDemoWindow);
+    // Start rendering the root node
+    if (ImGui::TreeNode("ROOT")) {
+        for (auto& object: m_objects) {
+            if (!object->GetTransform().GetParent()) {
+                // Only render root objects
+                RenderObject(object.get());
+            }
+        }
+        ImGui::TreePop();
+    }
+    ImGui::End();
+}
+
+
+void Scene::CleanupDestroyedGameObjects() {
+    if (m_BeingUnloaded) {
+        //Scene is gone anyways, kill everything
+        m_objects.clear();
+        return;
+    }
+
+    for (const auto& gameObject: m_objects) {
+        //First check if a gameobjects components needs to be destroyed
+        gameObject->CleanupComponents();
+    }
+
+    // //Strange for loop since im deleting during looping over it
+    // for (auto it = m_objects.begin(); it != m_objects.end();) {
+    //     if ((*it)->IsBeingDestroyed()) {
+    //         it = m_objects.erase(it);
+    //     } else {
+    //         ++it;
+    //     }
+    // }
+
+    std::erase_if(m_objects, [] (const std::shared_ptr<GameObject>& gameObject) {
+        return gameObject->IsBeingDestroyed();
+    });
+}
+
+void Scene::Unload() {
+    if (m_unregisterBindings) {
+        m_unregisterBindings();
+    }
+    m_BeingUnloaded = true;
+}
+
+void Scene::DestroyGameObjects() {
+    if (m_BeingUnloaded) {
+
+        for (auto& obj : m_pendingAdditions) {
+            m_objects.emplace_back(std::move(obj));
+        }
+        m_pendingAdditions.clear();
+
+        //Scene is gone anyways, kill everything
+        for (const auto& gameObject: m_objects) {
+            gameObject->Destroy();
+        }
+    } else {
+        assert(true && "Scene is being cleared but not unloaded? Wierd");
+    }
+}
